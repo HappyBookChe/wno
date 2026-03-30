@@ -635,29 +635,37 @@
             const lastIsPlus = lastCard.v.startsWith('+');
             const currIsPlus = c.v.startsWith('+');
 
-            // 叠加状态下不能出 wild
-            if (stack > 0 && c.v === 'wild') {
-                setStatus("❌ 叠加状态不能出 wild");
-                return;
-            }
-
-            if (stack > 0 && lastIsPlus && currIsPlus) {
-                const lastNum = parsePlusValue(lastCard.v);
-                const currNum = parsePlusValue(c.v);
-
-                // +2 可以接 +2、+4、+5、+6、+999
-                if (lastNum === 2) {
-                    if (!(currNum === 2 || currNum >= 4)) {
-                        setStatus("❌ +2 只能接 +2 或黑+牌");
-                        return;
-                    }
+            // 叠加状态：只能出+牌，不能出任何其他牌（包括同色普通牌、wild、Skip、R等）
+            if (stack > 0) {
+                // 1. 叠加中不能出 wild
+                if (c.v === 'wild') {
+                    setStatus("❌ 叠加状态不能出 wild");
+                    return;
                 }
+                // 2. 叠加中必须出+牌，不能出普通牌（同色也不行）
+                if (!currIsPlus) {
+                    setStatus("❌ 叠加中只能出+牌，不能出普通牌");
+                    return;
+                }
+                // 3. 原有+牌叠加规则检查
+                if (lastIsPlus && currIsPlus) {
+                    const lastNum = parsePlusValue(lastCard.v);
+                    const currNum = parsePlusValue(c.v);
 
-                // +4 及以上黑+牌，不能接 +2
-                if (lastNum >= 4) {
-                    if (currNum === 2) {
-                        setStatus("❌ 黑+牌不能接 +2");
-                        return;
+                    // +2 可以接 +2、+4、+5、+6、+999
+                    if (lastNum === 2) {
+                        if (!(currNum === 2 || currNum >= 4)) {
+                            setStatus("❌ +2 只能接 +2 或黑+牌");
+                            return;
+                        }
+                    }
+
+                    // +4 及以上黑+牌，不能接 +2
+                    if (lastNum >= 4) {
+                        if (currNum === 2) {
+                            setStatus("❌ 黑+牌不能接 +2");
+                            return;
+                        }
                     }
                 }
             }
@@ -743,8 +751,14 @@
             }
         }
 
-        if (validIdx === -1 && stack === 0) {
-            validIdx = hands[id].findIndex(c => valid(c));
+        // 叠加状态下，AI只能出+牌，不能出普通牌
+        if (validIdx === -1) {
+            if (stack === 0) {
+                validIdx = hands[id].findIndex(c => valid(c));
+            } else {
+                // 叠加中：找不到+牌就只能摸牌，不能出任何普通牌
+                validIdx = -1;
+            }
         }
 
         if (validIdx !== -1) {
