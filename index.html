@@ -12,6 +12,61 @@
 
         body { background-color: #0e0f20; color: white; font-family: 'Consolas', 'Microsoft YaHei', sans-serif; margin: 0; overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh; }
 
+        /* 游戏胜利弹窗样式 - 同风格设计 */
+        #game-win-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 99999;
+            backdrop-filter: blur(6px);
+        }
+        .win-box {
+            background: linear-gradient(135deg, #1a3f5e, #061f20);
+            border: 3px solid var(--gold);
+            border-radius: 20px;
+            padding: 50px 80px;
+            text-align: center;
+            box-shadow: 0 0 50px rgba(241, 192, 15, 0.3);
+            animation: modalPop 0.5s ease;
+        }
+        @keyframes modalPop {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .win-title {
+            font-size: 42px;
+            font-weight: bold;
+            color: var(--gold);
+            margin-bottom: 20px;
+            text-shadow: 0 0 20px var(--gold);
+        }
+        .win-desc {
+            font-size: 20px;
+            color: #fff;
+            margin-bottom: 30px;
+        }
+        .win-restart-btn {
+            background: var(--gold);
+            color: #000;
+            border: none;
+            border-radius: 12px;
+            padding: 15px 40px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .win-restart-btn:hover {
+            transform: scale(1.08);
+            box-shadow: 0 0 20px var(--gold);
+        }
+
         #score-board {
             position: fixed;
             top: 15px;
@@ -225,6 +280,15 @@
 </head>
 <body class="pc-mode">
 
+<!-- 游戏胜利弹窗 -->
+<div id="game-win-modal">
+    <div class="win-box">
+        <div class="win-title" id="win-title">GAME OVER</div>
+        <div class="win-desc" id="win-desc">结算中...</div>
+        <button class="win-restart-btn" onclick="restartGame()">再来一局</button>
+    </div>
+</div>
+
 <div id="score-board">胜: 0 | 负: 0</div>
 <div id="big-wno">WNO</div>
 <button id="skip-btn" onclick="skipTurn()">SKIP</button>
@@ -326,6 +390,34 @@
 
     let currentUserName = "USER_AGENT";
     let winCount = 0, loseCount = 0;
+
+    // 显示胜利弹窗
+    function showWinModal(isPlayerWin, winnerName) {
+        const modal = document.getElementById('game-win-modal');
+        const title = document.getElementById('win-title');
+        const desc = document.getElementById('win-desc');
+        
+        if (isPlayerWin) {
+            title.innerText = "🎉 你赢了！";
+            desc.innerText = "恭喜你获得胜利！";
+            winCount++;
+        } else {
+            title.innerText = "💢 游戏结束";
+            desc.innerText = `${winnerName} 获得了胜利！`;
+            loseCount++;
+        }
+        
+        updateScoreBoard();
+        modal.style.display = "flex";
+    }
+
+    // 重启游戏
+    function restartGame() {
+        document.getElementById('game-win-modal').style.display = "none";
+        deck = []; hands = { player: [], p1: [], p2: [], p3: [] }; lastCard = null;
+        currIdx = 0; rev = false; lock = false; stack = 0; wnoFlag = false; playerJustDrawn = false;
+        setup();
+    }
 
     function updateScoreBoard() {
         document.getElementById('score-board').innerText = `胜: ${winCount} | 负: ${loseCount}`;
@@ -481,14 +573,11 @@
     function checkWin() {
         for (let k in hands) {
             if (hands[k].length === 0) {
-                if (k === 'player') { winCount++; alert("🎉 你赢了！"); }
-                else { loseCount++; alert(`💢 ${k.toUpperCase()} 赢了！`); }
-                updateScoreBoard();
-                setTimeout(() => {
-                    deck = []; hands = { player: [], p1: [], p2: [], p3: [] }; lastCard = null;
-                    currIdx = 0; rev = false; lock = false; stack = 0; wnoFlag = false; playerJustDrawn = false;
-                    setup();
-                }, 500);
+                if (k === 'player') {
+                    showWinModal(true, "");
+                } else {
+                    showWinModal(false, k.toUpperCase());
+                }
                 return true;
             }
         }
