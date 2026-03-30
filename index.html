@@ -635,6 +635,12 @@
             const lastIsPlus = lastCard.v.startsWith('+');
             const currIsPlus = c.v.startsWith('+');
 
+            // 叠加状态下不能出 wild
+            if (stack > 0 && c.v === 'wild') {
+                setStatus("❌ 叠加状态不能出 wild");
+                return;
+            }
+
             if (stack > 0 && lastIsPlus && currIsPlus) {
                 const lastNum = parsePlusValue(lastCard.v);
                 const currNum = parsePlusValue(c.v);
@@ -654,12 +660,6 @@
                         return;
                     }
                 }
-            }
-
-            // wild 后面不能接任何 +
-            if (lastCard.v === 'wild' && currIsPlus) {
-                setStatus("❌ wild 后不能接 + 牌");
-                return;
             }
 
             if (!valid(c)) { setStatus("❌ 不能出这张牌"); return; }
@@ -743,11 +743,7 @@
             }
         }
 
-        if (lastCard.v === 'wild') {
-            validIdx = hands[id].findIndex(c => !c.v.startsWith('+') && valid(c));
-        }
-
-        if (validIdx === -1 && stack === 0 && lastCard.v !== 'wild') {
+        if (validIdx === -1 && stack === 0) {
             validIdx = hands[id].findIndex(c => valid(c));
         }
 
